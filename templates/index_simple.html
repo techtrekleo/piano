@@ -54,6 +54,73 @@
             margin-bottom: 20px;
         }
         
+        .upload-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .upload-area {
+            border: 3px dashed #4ecdc4;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        
+        .upload-area:hover {
+            border-color: #45b7d1;
+            background: rgba(69, 183, 209, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.15);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #4ecdc4;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .upload-hint {
+            color: #b8b8b8;
+            font-size: 1rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(78, 205, 196, 0.3);
+        }
+        
         .status-section {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
@@ -78,6 +145,45 @@
         .status-details {
             color: #b8b8b8;
             font-size: 1rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-section {
+            display: none;
+            background: rgba(78, 205, 196, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+        
+        .error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #ff6b6b;
         }
         
         .piano-section {
@@ -124,7 +230,7 @@
         
         .coming-soon {
             text-align: center;
-            padding: 60px 20px;
+            padding: 40px 20px;
             color: #b8b8b8;
         }
         
@@ -188,6 +294,32 @@
             <p class="subtitle">上傳音樂，看見音樂的形狀</p>
         </div>
         
+        <!-- 音樂上傳區域 -->
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">🎵</div>
+                <div class="upload-text">點擊或拖拽音樂文件到這裡</div>
+                <div class="upload-hint">支持 MP3, WAV, FLAC, M4A, OGG 格式</div>
+                <input type="file" id="fileInput" class="file-input" accept=".mp3,.wav,.flac,.m4a,.ogg">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    選擇文件
+                </button>
+            </div>
+        </div>
+        
+        <!-- 加載狀態 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>正在分析音樂...</div>
+        </div>
+        
+        <!-- 結果顯示 -->
+        <div class="result-section" id="resultSection">
+            <h3>🎉 音樂分析完成！</h3>
+            <p>您的音樂文件已成功上傳並分析。</p>
+            <p><strong>注意：</strong> 完整的音頻分析功能正在開發中，目前只支持基本文件上傳。</p>
+        </div>
+        
         <div class="status-section">
             <div class="status-icon">✅</div>
             <div class="status-text">音樂可視化器運行正常</div>
@@ -233,6 +365,97 @@
     </div>
 
     <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const resultSection = document.getElementById('resultSection');
+        
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        // 文件選擇
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // 處理文件
+        function handleFile(file) {
+            if (!file.type.startsWith('audio/')) {
+                showError('請選擇音頻文件');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showLoading(true);
+            hideResult();
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    showResult(data.message);
+                } else {
+                    showError(data.error || '上傳失敗');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('網絡錯誤：' + error.message);
+            });
+        }
+        
+        // 顯示/隱藏加載狀態
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+        }
+        
+        // 顯示結果
+        function showResult(message) {
+            resultSection.style.display = 'block';
+            resultSection.querySelector('p').textContent = message;
+        }
+        
+        // 隱藏結果
+        function hideResult() {
+            resultSection.style.display = 'none';
+        }
+        
+        // 顯示錯誤信息
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            resultSection.parentNode.insertBefore(errorDiv, resultSection);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+        
         // 簡化的鋼琴鍵盤生成
         function createPianoKeyboard() {
             const keyboard = document.getElementById('pianoKeyboard');
