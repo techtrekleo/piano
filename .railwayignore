@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+DEPLOY.md
+*.pyc
+__pycache__
+.DS_Store
+.env
+*.log
+install.py
+run.py
+music_visualizer.py
+advanced_visualizer.py
