@@ -1,0 +1,10 @@
+# 基本Web框架
+Flask>=2.3.0
+Werkzeug>=2.3.0
+
+# 部署
+gunicorn>=21.0.0
+
+# 基本工具
+setuptools>=65.0.0
+wheel>=0.40.0
