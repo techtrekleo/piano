@@ -1,15 +1,17 @@
-# 音頻處理
-librosa==0.10.1
-numpy==1.24.3
-scipy==1.11.1
-soundfile==0.12.1
+# 音頻處理 - 使用最新兼容版本
+librosa>=0.10.1
+numpy>=1.24.0
+scipy>=1.11.0
+soundfile>=0.12.0
 
 # 可視化
-matplotlib==3.7.1
+matplotlib>=3.7.0
 
 # Web框架
-Flask==2.3.3
-Werkzeug==2.3.7
+Flask>=2.3.0
+Werkzeug>=2.3.0
 
 # 其他依賴
-gunicorn==21.2.0
+gunicorn>=21.0.0
+setuptools>=65.0.0
+wheel>=0.40.0
