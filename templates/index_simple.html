@@ -194,6 +194,30 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             min-height: 400px;
             position: relative;
+            overflow: hidden;
+        }
+        
+        .falling-note {
+            position: absolute;
+            border-radius: 50%;
+            z-index: 10;
+            animation: fallDown linear forwards;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+        }
+        
+        @keyframes fallDown {
+            from {
+                transform: translateY(-50px) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(-30px) scale(1);
+            }
+            to {
+                transform: translateY(350px) scale(0.8);
+                opacity: 0.8;
+            }
         }
         
         .piano-keyboard {
@@ -418,6 +442,9 @@
                 showLoading(false);
                 if (data.success) {
                     showResult(data.message);
+                    // 開始動態音符可視化！
+                    startVisualization(data.visualization);
+                    showAudioInfo(data.audio_info);
                 } else {
                     showError(data.error || '上傳失敗');
                 }
@@ -426,6 +453,69 @@
                 showLoading(false);
                 showError('網絡錯誤：' + error.message);
             });
+        }
+        
+        // 顯示音頻信息
+        function showAudioInfo(audioInfo) {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'result-section';
+            infoDiv.innerHTML = `
+                <h3>🎵 音頻信息</h3>
+                <p><strong>文件名：</strong>${audioInfo.filename}</p>
+                <p><strong>時長：</strong>${audioInfo.duration}秒</p>
+                <p><strong>節拍：</strong>${audioInfo.tempo} BPM</p>
+                <p><strong>節拍數：</strong>${audioInfo.beats_count}</p>
+            `;
+            resultSection.parentNode.insertBefore(infoDiv, resultSection.nextSibling);
+        }
+        
+        // 開始可視化
+        function startVisualization(visualizationData) {
+            // 清除之前的音符
+            clearNotes();
+            
+            // 開始音符動畫
+            if (visualizationData.notes && visualizationData.notes.length > 0) {
+                animateNotes(visualizationData.notes);
+            }
+        }
+        
+        // 清除音符
+        function clearNotes() {
+            const existingNotes = document.querySelectorAll('.falling-note');
+            existingNotes.forEach(note => note.remove());
+        }
+        
+        // 動畫音符
+        function animateNotes(notes) {
+            notes.forEach((noteData, index) => {
+                setTimeout(() => {
+                    createFallingNote(noteData);
+                }, noteData.time * 1000);
+            });
+        }
+        
+        // 創建下落的音符
+        function createFallingNote(noteData) {
+            const note = document.createElement('div');
+            note.className = 'falling-note';
+            note.style.left = noteData.x + 'px';
+            note.style.top = '-50px';
+            note.style.width = noteData.size + 'px';
+            note.style.height = noteData.size + 'px';
+            note.style.backgroundColor = `rgb(${noteData.color[0]}, ${noteData.color[1]}, ${noteData.color[2]})`;
+            note.style.animationDuration = `${noteData.speed}s`;
+            
+            // 添加到鋼琴區域
+            const pianoSection = document.querySelector('.piano-section');
+            pianoSection.appendChild(note);
+            
+            // 動畫結束後移除音符
+            setTimeout(() => {
+                if (note.parentNode) {
+                    note.remove();
+                }
+            }, noteData.speed * 1000 + 1000);
         }
         
         // 顯示/隱藏加載狀態
