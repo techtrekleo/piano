@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>See Music - 音樂可視化器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 3s ease infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #b8b8b8;
+            margin-bottom: 20px;
+        }
+        
+        .upload-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .upload-area {
+            border: 3px dashed #4ecdc4;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        
+        .upload-area:hover {
+            border-color: #45b7d1;
+            background: rgba(69, 183, 209, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.15);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #4ecdc4;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .upload-hint {
+            color: #b8b8b8;
+            font-size: 1rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(78, 205, 196, 0.3);
+        }
+        
+        .visualization-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 600px;
+            position: relative;
+        }
+        
+        .piano-keyboard {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+        }
+        
+        .piano-key {
+            position: absolute;
+            border: 1px solid #ccc;
+            transition: all 0.1s ease;
+        }
+        
+        .white-key {
+            background: white;
+            width: 40px;
+            height: 120px;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .black-key {
+            background: #333;
+            width: 24px;
+            height: 80px;
+            border-radius: 0 0 3px 3px;
+            z-index: 2;
+        }
+        
+        .note {
+            position: absolute;
+            border-radius: 50%;
+            animation: fall 3s linear infinite;
+            z-index: 1;
+        }
+        
+        @keyframes fall {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(500px); opacity: 1; }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .audio-info {
+            display: none;
+            background: rgba(78, 205, 196, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            text-align: center;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .info-label {
+            color: #b8b8b8;
+            font-size: 0.9rem;
+        }
+        
+        .error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #ff6b6b;
+        }
+        
+        .success {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid #4ecdc4;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #4ecdc4;
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .upload-section, .visualization-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">See Music</h1>
+            <p class="subtitle">上傳音樂，看見音樂的形狀</p>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">🎵</div>
+                <div class="upload-text">點擊或拖拽音樂文件到這裡</div>
+                <div class="upload-hint">支持 MP3, WAV, FLAC, M4A, OGG 格式</div>
+                <input type="file" id="fileInput" class="file-input" accept=".mp3,.wav,.flac,.m4a,.ogg">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    選擇文件
+                </button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>正在分析音樂...</div>
+        </div>
+        
+        <div class="audio-info" id="audioInfo">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-value" id="duration">0:00</div>
+                    <div class="info-label">時長</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-value" id="tempo">0</div>
+                    <div class="info-label">BPM</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-value" id="key">-</div>
+                    <div class="info-label">調性</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-value" id="beats">0</div>
+                    <div class="info-label">節拍數</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="visualization-section">
+            <div class="piano-keyboard" id="pianoKeyboard"></div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const audioInfo = document.getElementById('audioInfo');
+        const pianoKeyboard = document.getElementById('pianoKeyboard');
+        
+        let notes = [];
+        let animationId;
+        
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        // 文件選擇
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // 處理文件
+        function handleFile(file) {
+            if (!file.type.startsWith('audio/')) {
+                showError('請選擇音頻文件');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            showLoading(true);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    showSuccess('音樂分析完成！');
+                    displayAudioInfo(data.audio_data);
+                    startVisualization(data.visualization);
+                } else {
+                    showError(data.error || '上傳失敗');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('網絡錯誤：' + error.message);
+            });
+        }
+        
+        // 顯示/隱藏加載狀態
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+        }
+        
+        // 顯示錯誤信息
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            audioInfo.parentNode.insertBefore(errorDiv, audioInfo);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+        
+        // 顯示成功信息
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            audioInfo.parentNode.insertBefore(successDiv, audioInfo);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 5000);
+        }
+        
+        // 顯示音頻信息
+        function displayAudioInfo(audioData) {
+            document.getElementById('duration').textContent = formatDuration(audioData.duration);
+            document.getElementById('tempo').textContent = Math.round(audioData.tempo);
+            document.getElementById('key').textContent = 'C'; // 簡化顯示
+            document.getElementById('beats').textContent = audioData.beats.length;
+            
+            audioInfo.style.display = 'block';
+        }
+        
+        // 格式化時長
+        function formatDuration(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+        
+        // 開始可視化
+        function startVisualization(visualizationData) {
+            // 清除之前的動畫
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            // 創建鋼琴鍵盤
+            createPianoKeyboard(visualizationData.piano_keys);
+            
+            // 開始音符動畫
+            notes = visualizationData.notes;
+            animateNotes();
+        }
+        
+        // 創建鋼琴鍵盤
+        function createPianoKeyboard(pianoKeys) {
+            pianoKeyboard.innerHTML = '';
+            
+            // 白鍵
+            pianoKeys.white_keys.forEach((key, index) => {
+                const whiteKey = document.createElement('div');
+                whiteKey.className = 'piano-key white-key';
+                whiteKey.style.left = (key * 40) + 'px';
+                pianoKeyboard.appendChild(whiteKey);
+            });
+            
+            // 黑鍵
+            pianoKeys.black_keys.forEach((key) => {
+                const blackKey = document.createElement('div');
+                blackKey.className = 'piano-key black-key';
+                blackKey.style.left = (key * 40 - 12) + 'px';
+                blackKey.style.top = '0px';
+                pianoKeyboard.appendChild(blackKey);
+            });
+        }
+        
+        // 動畫音符
+        function animateNotes() {
+            notes.forEach((note, index) => {
+                setTimeout(() => {
+                    createNote(note);
+                }, note.time * 1000);
+            });
+        }
+        
+        // 創建音符
+        function createNote(noteData) {
+            const note = document.createElement('div');
+            note.className = 'note';
+            note.style.left = (noteData.x * 40 + 20) + 'px';
+            note.style.top = '-50px';
+            note.style.width = (noteData.size * 20) + 'px';
+            note.style.height = (noteData.size * 20) + 'px';
+            note.style.backgroundColor = `rgb(${noteData.color[0]}, ${noteData.color[1]}, ${noteData.color[2]})`;
+            
+            pianoKeyboard.appendChild(note);
+            
+            // 動畫結束後移除音符
+            setTimeout(() => {
+                if (note.parentNode) {
+                    note.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
